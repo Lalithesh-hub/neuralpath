@@ -1,0 +1,17 @@
+version: '3.8'
+
+services:
+  postgres:
+    image: postgres:15-alpine
+    container_name: neuralpath-db
+    environment:
+      POSTGRES_USER: neuralpath
+      POSTGRES_PASSWORD: password123
+      POSTGRES_DB: neuralpath
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+
+volumes:
+  postgres-data:

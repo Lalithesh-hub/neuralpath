@@ -1,0 +1,108 @@
+// prisma/schema.prisma
+// NeuralPath Database Schema
+// Run: npx prisma migrate dev --name init
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+// ─── MODELS ───────────────────────────────────────────────────────────────────
+
+model User {
+  id           String    @id @default(cuid())
+  name         String
+  email        String    @unique
+  passwordHash String    @default("") @map("password_hash")
+  googleId     String?   @unique @map("google_id")
+  role         String    @default("STUDENT")
+  phone        String?
+  avatarUrl    String?   @map("avatar_url")
+
+  // Relations
+  bookings     Booking[]
+  refreshTokens RefreshToken[]
+
+  createdAt    DateTime  @default(now()) @map("created_at")
+  updatedAt    DateTime  @updatedAt @map("updated_at")
+
+  @@map("users")
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String   @map("user_id")
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime @map("expires_at")
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@map("refresh_tokens")
+}
+
+model Course {
+  id          String      @id @default(cuid())
+  title       String
+  slug        String      @unique
+  description String
+  longDesc    String?     @map("long_desc")
+  price       Int         // stored in paise (₹12,999 = 1299900)
+  level       String      
+  category    String
+  emoji       String      @default("💻")
+  totalSeats  Int         @default(30) @map("total_seats")
+  bookedSeats Int         @default(0)  @map("booked_seats")
+  duration    String      // e.g. "8 Weeks"
+  isActive    Boolean     @default(true) @map("is_active")
+
+  // Relations
+  bookings    Booking[]
+
+  createdAt   DateTime    @default(now()) @map("created_at")
+  updatedAt   DateTime    @updatedAt @map("updated_at")
+
+  @@map("courses")
+}
+
+model Booking {
+  id        String        @id @default(cuid())
+  userId    String        @map("user_id")
+  courseId  String        @map("course_id")
+  status    String        @default("PENDING") 
+  batch     String?       // Morning, Evening, Weekend // NEW for Offline Centre
+
+  // Relations
+  user      User          @relation(fields: [userId], references: [id])
+  course    Course        @relation(fields: [courseId], references: [id])
+  payment   Payment?
+
+  bookedAt  DateTime      @default(now()) @map("booked_at")
+  updatedAt DateTime      @updatedAt @map("updated_at")
+
+  // A user can only book the same course once
+  @@unique([userId, courseId])
+  @@map("bookings")
+}
+
+model Payment {
+  id              String        @id @default(cuid())
+  bookingId       String        @unique @map("booking_id")
+  booking         Booking       @relation(fields: [bookingId], references: [id])
+  amount          Int           // in paise
+  currency        String        @default("INR")
+  status          String        @default("INITIATED") 
+
+  // Razorpay specific fields
+  razorpayOrderId   String?     @unique @map("razorpay_order_id")
+  razorpayPaymentId String?     @map("razorpay_payment_id")
+  razorpaySignature String?     @map("razorpay_signature")
+
+  createdAt DateTime @default(now()) @map("created_at")
+  updatedAt DateTime @updatedAt @map("updated_at")
+
+  @@map("payments")
+}
