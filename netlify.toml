@@ -5,7 +5,12 @@
 [build.environment]
   NODE_VERSION = "20"
 
-# SPA redirect — all paths go to index.html so React Router works
+# SPA redirect — but EXCLUDE /api so it doesn't swallow backend calls
+[[redirects]]
+  from   = "/api/*"
+  to     = "/api/:splat"
+  status = 200
+
 [[redirects]]
   from   = "/*"
   to     = "/index.html"
